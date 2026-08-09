@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:aurum/core/services/storage_service.dart';
+import 'package:aurum/core/services/background_service.dart';
 import 'package:aurum/core/theme/app_theme.dart';
 import 'package:aurum/routes/app_pages.dart';
 import 'package:aurum/routes/app_routes.dart';
@@ -11,6 +12,7 @@ void main() async {
   
   await Hive.initFlutter();
   await StorageService().init();
+  await BackgroundService().init();
   
   runApp(const AurumApp());
 }

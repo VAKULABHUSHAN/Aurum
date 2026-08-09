@@ -2,8 +2,10 @@ import 'package:get/get.dart';
 import 'package:aurum/data/models/gold_price_model.dart';
 import 'package:aurum/data/models/gold_history_model.dart';
 import 'package:aurum/data/models/price_movement.dart';
+import 'package:aurum/data/models/chart_range.dart';
 import 'package:aurum/core/services/gold_api_service.dart';
 import 'package:aurum/core/services/storage_service.dart';
+import 'package:aurum/core/services/widget_service.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
 
@@ -15,6 +17,12 @@ class HomeController extends GetxController {
   final RxString lastUpdated = ''.obs;
   final RxBool isOfflineData = false.obs;
   final Rx<PriceMovement?> priceMovement = Rx<PriceMovement?>(null);
+
+  // Chart reactive state
+  final Rx<ChartRange> selectedRange = ChartRange.day24h.obs;
+  final RxList<GoldHistoryModel> chartHistory = <GoldHistoryModel>[].obs;
+  final Rx<double?> chartHigh = Rx<double?>(null);
+  final Rx<double?> chartLow = Rx<double?>(null);
 
   @override
   void onInit() {
@@ -31,9 +39,15 @@ class HomeController extends GetxController {
       isOfflineData.value = true;
       isLoading.value = false;
       priceMovement.value = calculatePriceMovement();
+      updateChartData();
+      
+      // Keep widget up to date with loaded cached data
+      WidgetService.updateGoldPriceWidget(cachedRecord.goldPrice);
+      
       AppLogger.i('Loaded cached gold price: ${cachedRecord.goldPrice.priceGram24k}');
     } else {
       isLoading.value = true;
+      updateChartData();
     }
 
     // 2. Perform background API request
@@ -67,6 +81,61 @@ class HomeController extends GetxController {
     return PriceMovement(amountChange: diff, percentageChange: percentage);
   }
 
+  void updateChartData() {
+    final allHistory = StorageService().getRecentHistory();
+    if (allHistory.isEmpty) {
+      chartHistory.clear();
+      chartHigh.value = null;
+      chartLow.value = null;
+      return;
+    }
+
+    final now = DateTime.now();
+    final cutoff = now.subtract(selectedRange.value.duration);
+
+    // Deduplicate records with identical timestamps (keep latest record per timestamp)
+    final Map<String, GoldHistoryModel> uniqueByTimestamp = {};
+    for (final record in allHistory) {
+      final dt = DateTime.tryParse(record.fetchTimestamp) ?? DateTime.tryParse(record.goldPrice.timestamp);
+      if (dt != null) {
+        if (dt.isAfter(cutoff) || dt.isAtSameMomentAs(cutoff)) {
+          uniqueByTimestamp[dt.toIso8601String()] = record;
+        }
+      }
+    }
+
+    final filtered = uniqueByTimestamp.values.toList();
+    // Sort deterministically (oldest first, newest last)
+    filtered.sort((a, b) {
+      final dtA = DateTime.tryParse(a.fetchTimestamp) ?? DateTime.tryParse(a.goldPrice.timestamp) ?? DateTime(0);
+      final dtB = DateTime.tryParse(b.fetchTimestamp) ?? DateTime.tryParse(b.goldPrice.timestamp) ?? DateTime(0);
+      return dtA.compareTo(dtB);
+    });
+
+    chartHistory.assignAll(filtered);
+
+    if (filtered.length >= 2) {
+      double high = filtered.first.goldPrice.priceGram24k;
+      double low = filtered.first.goldPrice.priceGram24k;
+      for (final r in filtered) {
+        final p = r.goldPrice.priceGram24k;
+        if (p > high) high = p;
+        if (p < low) low = p;
+      }
+      chartHigh.value = high;
+      chartLow.value = low;
+    } else {
+      chartHigh.value = null;
+      chartLow.value = null;
+    }
+  }
+
+  void setChartRange(ChartRange range) {
+    if (selectedRange.value == range) return;
+    selectedRange.value = range;
+    updateChartData();
+  }
+
   Future<void> fetchGoldPrice({bool isManualRefresh = false}) async {
     // isLoading is strictly for first launch with no cached data
     if (goldPrice.value == null) {
@@ -90,8 +159,12 @@ class HomeController extends GetxController {
       );
       await StorageService().saveGoldHistory(newRecord);
       
-      // Re-calculate price movement with updated history
+      // Re-calculate price movement and chart with updated history
       priceMovement.value = calculatePriceMovement();
+      updateChartData();
+      
+      // Update home screen widget
+      await WidgetService.updateGoldPriceWidget(freshData);
       
       AppLogger.i('Successfully fetched live gold price.');
     } catch (e) {

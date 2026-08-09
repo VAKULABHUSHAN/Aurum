@@ -6,6 +6,7 @@ import 'package:aurum/core/theme/app_text_styles.dart';
 import 'package:aurum/features/home/controller/home_controller.dart';
 import 'package:aurum/features/home/views/widgets/main_price_card.dart';
 import 'package:aurum/features/home/views/widgets/secondary_price_card.dart';
+import 'package:aurum/features/home/views/widgets/price_history_card.dart';
 
 class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key});
@@ -121,6 +122,14 @@ class HomeScreen extends GetView<HomeController> {
                   const SizedBox(height: AppSpacing.md),
                   SecondaryPriceCard(
                     priceData: priceData,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  PriceHistoryCard(
+                    history: controller.chartHistory,
+                    selectedRange: controller.selectedRange.value,
+                    onRangeSelected: controller.setChartRange,
+                    highPrice: controller.chartHigh.value,
+                    lowPrice: controller.chartLow.value,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                 ],

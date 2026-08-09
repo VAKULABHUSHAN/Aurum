@@ -16,8 +16,12 @@ class StorageService {
   Box<GoldHistoryModel>? _box;
 
   Future<void> init() async {
-    Hive.registerAdapter(GoldPriceModelAdapter());
-    Hive.registerAdapter(GoldHistoryModelAdapter());
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(GoldPriceModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(GoldHistoryModelAdapter());
+    }
     _box = await Hive.openBox<GoldHistoryModel>(_boxName);
   }
 

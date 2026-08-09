@@ -74,5 +74,11 @@ void main() {
 
     // Verify units
     expect(find.text('per gram'), findsNWidgets(2));
+
+    // Verify Price History card
+    expect(find.text('Price History'), findsOneWidget);
+    expect(find.text('24H'), findsOneWidget);
+    expect(find.text('7D'), findsOneWidget);
+    expect(find.text('30D'), findsOneWidget);
   });
 }
