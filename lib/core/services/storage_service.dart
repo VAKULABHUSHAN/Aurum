@@ -29,40 +29,47 @@ class StorageService {
     _marketBox = await Hive.openBox<GoldHistoryModel>(_marketBoxName);
   }
 
-  Future<void> saveGoldHistory(GoldHistoryModel newRecord) async {
+  Future<void> cacheLatestLivePrice(GoldHistoryModel newRecord) async {
     if (_box == null) return;
     
-    final latestRecord = getLatestGoldHistory();
-    
-    // Deduplication logic: Only store if fetchTimestamp is different
-    if (latestRecord != null && latestRecord.fetchTimestamp == newRecord.fetchTimestamp) {
-      AppLogger.i('Skipping save: Record with timestamp ${newRecord.fetchTimestamp} already exists.');
-      return;
-    }
-
+    // Clear and keep only the latest live price record
+    await _box!.clear();
     await _box!.add(newRecord);
-    AppLogger.i('Saved new gold price history record.');
   }
 
-  Future<void> saveMarketHistory(List<GoldHistoryModel> records) async {
+  Future<void> saveMarketHistory(List<GoldHistoryModel> newRecords) async {
     if (_marketBox == null) return;
+    
+    final existingRecords = _marketBox!.values.toList();
+    final Map<String, GoldHistoryModel> uniqueRecords = {};
+    
+    // Populate with existing records
+    for (final record in existingRecords) {
+      uniqueRecords[record.fetchTimestamp] = record;
+    }
+    
+    // Update/insert new records (overwriting if exact timestamp exists)
+    for (final record in newRecords) {
+      uniqueRecords[record.fetchTimestamp] = record;
+    }
+    
+    final mergedRecords = uniqueRecords.values.toList();
+    
+    // Sort chronologically (oldest to newest)
+    mergedRecords.sort((a, b) {
+      final dtA = DateTime.tryParse(a.fetchTimestamp) ?? DateTime(0);
+      final dtB = DateTime.tryParse(b.fetchTimestamp) ?? DateTime(0);
+      return dtA.compareTo(dtB);
+    });
+
     await _marketBox!.clear();
-    await _marketBox!.addAll(records);
-    AppLogger.i('Saved ${records.length} market history records.');
+    await _marketBox!.addAll(mergedRecords);
+    AppLogger.i('Saved ${mergedRecords.length} market history records.');
   }
 
-  GoldHistoryModel? getLatestGoldHistory() {
+  GoldHistoryModel? getLatestLivePrice() {
     if (_box == null || _box!.isEmpty) return null;
     return _box!.values.last;
-  }
-
-  List<GoldHistoryModel> getRecentHistory({int? limit}) {
-    if (_box == null || _box!.isEmpty) return [];
-    final all = _box!.values.toList();
-    if (limit != null && all.length > limit) {
-      return all.sublist(all.length - limit);
-    }
-    return all;
   }
 
   List<GoldHistoryModel> getMarketHistory() {

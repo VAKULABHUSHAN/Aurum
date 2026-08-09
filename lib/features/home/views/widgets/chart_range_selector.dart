@@ -25,23 +25,8 @@ class ChartRangeSelector extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: ChartRange.values.map((range) {
           final isSelected = range == selectedRange;
-          final is1Y = range == ChartRange.year1y;
-          
           return GestureDetector(
-            onTap: () {
-              if (is1Y) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('1Y history requires a Pro tier. Showing max 30 days.'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                // We could prevent selection, but we'll allow it and it will just show 30 days of data.
-                onRangeSelected(range);
-              } else {
-                onRangeSelected(range);
-              }
-            },
+            onTap: () => onRangeSelected(range),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
@@ -64,9 +49,7 @@ class ChartRangeSelector extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: is1Y 
-                      ? AppColors.secondaryText.withValues(alpha: 0.5) 
-                      : (isSelected ? AppColors.primaryText : AppColors.secondaryText),
+                  color: isSelected ? AppColors.primaryText : AppColors.secondaryText,
                 ),
               ),
             ),

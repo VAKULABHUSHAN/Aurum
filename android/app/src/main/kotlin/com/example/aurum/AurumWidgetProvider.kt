@@ -24,6 +24,20 @@ class AurumWidgetProvider : HomeWidgetProvider() {
                 setTextViewText(R.id.gold_24k_price, price24k)
                 setTextViewText(R.id.gold_22k_price, price22k)
                 setTextViewText(R.id.gold_updated_at, updatedAt)
+
+                val chartImagePath = widgetData.getString("chart_image_path", null)
+                if (chartImagePath != null) {
+                    val file = java.io.File(chartImagePath)
+                    if (file.exists()) {
+                        val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                        setImageViewBitmap(R.id.widget_chart, bitmap)
+                        setViewVisibility(R.id.widget_chart, android.view.View.VISIBLE)
+                    } else {
+                        setViewVisibility(R.id.widget_chart, android.view.View.GONE)
+                    }
+                } else {
+                    setViewVisibility(R.id.widget_chart, android.view.View.GONE)
+                }
             }
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }

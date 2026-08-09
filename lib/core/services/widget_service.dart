@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:aurum/data/models/gold_price_model.dart';
 import 'package:aurum/core/utils/currency_formatter.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
 import 'package:aurum/core/utils/app_logger.dart';
+import 'package:aurum/core/services/storage_service.dart';
+import 'package:aurum/features/home/views/widgets/widget_chart_renderer.dart';
 
 class WidgetService {
   static const String _androidWidgetName = 'AurumWidgetProvider';
@@ -20,6 +23,20 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('gold_22k_price', '22K: $formatted22k');
       await HomeWidget.saveWidgetData<String>('gold_currency', data.currency);
       await HomeWidget.saveWidgetData<String>('gold_updated_at', formattedTime);
+
+      try {
+        var history = StorageService().getMarketHistory();
+        
+        final path = await HomeWidget.renderFlutterWidget(
+          WidgetChartRenderer(history: history),
+          key: 'chart_image',
+          logicalSize: const Size(400, 200),
+        );
+        
+        await HomeWidget.saveWidgetData<String>('chart_image_path', path.toString());
+      } catch (e) {
+        AppLogger.e('WidgetService: Failed to render widget chart', e);
+      }
 
       await HomeWidget.updateWidget(
         name: _androidWidgetName,

@@ -19,7 +19,7 @@ class HomeController extends GetxController {
   final Rx<PriceMovement?> priceMovement = Rx<PriceMovement?>(null);
 
   // Chart reactive state
-  final Rx<ChartRange> selectedRange = ChartRange.day24h.obs;
+  final Rx<ChartRange> selectedRange = ChartRange.week7d.obs;
   final RxList<GoldHistoryModel> chartHistory = <GoldHistoryModel>[].obs;
   final Rx<double?> chartHigh = Rx<double?>(null);
   final Rx<double?> chartLow = Rx<double?>(null);
@@ -32,7 +32,7 @@ class HomeController extends GetxController {
 
   void _loadInitialData() {
     // 1. Immediately load cached data if present
-    final cachedRecord = StorageService().getLatestGoldHistory();
+    final cachedRecord = StorageService().getLatestLivePrice();
     if (cachedRecord != null) {
       goldPrice.value = cachedRecord.goldPrice;
       lastUpdated.value = DateFormatter.formatDate(cachedRecord.fetchTimestamp);
@@ -56,7 +56,7 @@ class HomeController extends GetxController {
 
   PriceMovement? calculatePriceMovement() {
     // History is in ascending chronological order (newest last)
-    final history = StorageService().getRecentHistory();
+    final history = StorageService().getMarketHistory();
     if (history.length < 2) return null;
 
     final currentPrice = history.last.goldPrice.priceGram24k;
@@ -82,18 +82,7 @@ class HomeController extends GetxController {
   }
 
   void updateChartData() {
-    List<GoldHistoryModel> sourceHistory = [];
-    
-    // Use app-observed snapshots for 24H, canonical market history for 7D/30D
-    if (selectedRange.value == ChartRange.day24h) {
-      sourceHistory = StorageService().getRecentHistory();
-    } else {
-      sourceHistory = StorageService().getMarketHistory();
-      // Fallback to app-observed if market history is completely empty
-      if (sourceHistory.isEmpty) {
-        sourceHistory = StorageService().getRecentHistory();
-      }
-    }
+    final sourceHistory = StorageService().getMarketHistory();
 
     if (sourceHistory.isEmpty) {
       chartHistory.clear();
@@ -169,7 +158,7 @@ class HomeController extends GetxController {
         goldPrice: freshData,
         fetchTimestamp: freshData.timestamp,
       );
-      await StorageService().saveGoldHistory(newRecord);
+      await StorageService().cacheLatestLivePrice(newRecord);
       
       // Fetch Market History in parallel or sequentially
       try {
@@ -223,7 +212,11 @@ class HomeController extends GetxController {
       
       // If we have no cached data, display the error
       if (goldPrice.value == null) {
-        errorMessage.value = 'Unable to load gold price';
+        if (e.toString().contains('NETWORK_UNAVAILABLE')) {
+          errorMessage.value = 'No internet connection.';
+        } else {
+          errorMessage.value = 'Unable to load gold price';
+        }
       } else {
         isOfflineData.value = true;
       }

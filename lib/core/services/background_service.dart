@@ -4,6 +4,7 @@ import 'package:aurum/core/services/gold_api_service.dart';
 import 'package:aurum/core/services/storage_service.dart';
 import 'package:aurum/core/services/widget_service.dart';
 import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/gold_price_model.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 
 @pragma('vm:entry-point')
@@ -21,34 +22,52 @@ void callbackDispatcher() {
       // Fetch Live Data
       final freshData = await GoldApiService().fetchLiveGoldPrice();
 
-      // Deduplication check: handled internally by StorageService.saveGoldHistory if timestamp is exact same.
-      // But we also want to avoid saving if the price is identical? The requirement said:
-      // "If the newly fetched 24K and 22K prices are identical to the most recent stored snapshot, do not create meaningless duplicate history records. If the existing storage implementation already handles this, reuse it."
-      // StorageService.saveGoldHistory handles exact timestamp duplicates. Let's add price checking here or in StorageService.
-      // Wait, let's just use what we have, or add a quick check:
-      final latestRecord = StorageService().getLatestGoldHistory();
-      bool shouldSave = true;
-      if (latestRecord != null) {
-        if (latestRecord.goldPrice.priceGram24k == freshData.priceGram24k &&
-            latestRecord.goldPrice.priceGram22k == freshData.priceGram22k) {
-          // It's technically possible prices didn't change.
-          AppLogger.i('Background: Prices are identical. Still updating widget, but we might skip saving depending on storage policy.');
-          // Actually, we should just let StorageService handle timestamp deduplication.
-          // Wait, the prompt explicitly says: "If the newly fetched 24K and 22K prices are identical to the most recent stored snapshot, do not create meaningless duplicate history records."
-          shouldSave = false;
-        }
-      }
-
-      if (shouldSave) {
-        final newRecord = GoldHistoryModel(
-          goldPrice: freshData,
-          fetchTimestamp: freshData.timestamp,
-        );
-        await StorageService().saveGoldHistory(newRecord);
-      }
+      final newRecord = GoldHistoryModel(
+        goldPrice: freshData,
+        fetchTimestamp: freshData.timestamp,
+      );
+      await StorageService().cacheLatestLivePrice(newRecord);
 
       // Update Widget Data
       await WidgetService.updateGoldPriceWidget(freshData);
+
+      // Fetch Market History
+      try {
+        final to = DateTime.now();
+        final from = to.subtract(const Duration(days: 30));
+        final bars = await GoldApiService().fetchHistoricalBars(from: from, to: to);
+        
+        if (bars.isNotEmpty) {
+          final latestUsdPerGram = bars.last.close / 31.1034768;
+          final conversionMultiplier = freshData.priceGram24k / latestUsdPerGram;
+          
+          final marketHistory = bars.map((bar) {
+            final barUsdPerGram = bar.close / 31.1034768;
+            final price24k = barUsdPerGram * conversionMultiplier;
+            final price22k = price24k * (22.0 / 24.0);
+            
+            return GoldHistoryModel(
+              goldPrice: GoldPriceModel(
+                currency: 'INR',
+                timestamp: bar.barStart.toIso8601String(),
+                priceGram24k: price24k,
+                priceGram22k: price22k,
+                priceGram21k: 0.0,
+                priceGram20k: 0.0,
+                priceGram18k: 0.0,
+                priceGram16k: 0.0,
+                priceGram14k: 0.0,
+                priceGram10k: 0.0,
+              ),
+              fetchTimestamp: bar.barStart.toIso8601String(),
+            );
+          }).toList();
+          
+          await StorageService().saveMarketHistory(marketHistory);
+        }
+      } catch (e) {
+        AppLogger.e('Background: Failed to fetch market history', e);
+      }
 
       AppLogger.i('BACKGROUND SYNC SUCCESS');
       return Future.value(true);

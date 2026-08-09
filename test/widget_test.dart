@@ -41,10 +41,10 @@ void main() {
       priceGram10k: 3521.04,
     );
 
-    await StorageService().saveGoldHistory(
+    await StorageService().cacheLatestLivePrice(
       GoldHistoryModel(
         goldPrice: sampleGoldPrice,
-        fetchTimestamp: '2026-08-09T10:00:00Z',
+        fetchTimestamp: sampleGoldPrice.timestamp,
       ),
     );
 
