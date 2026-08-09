@@ -11,4 +11,20 @@ class CurrencyFormatter {
     );
     return format.format(value);
   }
+
+  static String formatChange(double value) {
+    final formatted = formatPrice(value.abs());
+    if (value > 0.0001) {
+      return '↑ $formatted';
+    } else if (value < -0.0001) {
+      return '↓ $formatted';
+    } else {
+      return '— $formatted';
+    }
+  }
+
+  static String formatPercentage(double value) {
+    final prefix = value > 0.0001 ? '+' : '';
+    return '$prefix${value.toStringAsFixed(2)}%';
+  }
 }

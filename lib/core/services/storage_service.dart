@@ -42,4 +42,15 @@ class StorageService {
     // Since we append, the latest is the last item
     return _box!.values.last;
   }
+
+  List<GoldHistoryModel> getRecentHistory({int? limit}) {
+    if (_box == null || _box!.isEmpty) return [];
+    
+    // Hive values are in insertion order (ascending chronological order, oldest first, newest last)
+    final all = _box!.values.toList();
+    if (limit != null && all.length > limit) {
+      return all.sublist(all.length - limit);
+    }
+    return all;
+  }
 }
