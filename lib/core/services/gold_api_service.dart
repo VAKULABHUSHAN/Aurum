@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:aurum/core/constants/api_constants.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 import 'package:aurum/data/models/gold_price_model.dart';
-
+import 'package:aurum/data/models/gold_bar_model.dart';
 class GoldApiService {
   static final GoldApiService _instance = GoldApiService._internal();
   late final Dio _dio;
@@ -51,6 +51,33 @@ class GoldApiService {
         return GoldPriceModel.fromJson(response.data);
       } else {
         throw Exception('Failed to load gold price. Status Code: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Connection timeout. Please check your internet connection.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('No internet connection.');
+      } else {
+        throw Exception('An unexpected error occurred: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('An unexpected error occurred: $e');
+    }
+  }
+
+  Future<List<GoldBarModel>> fetchHistoricalBars({required DateTime from, required DateTime to}) async {
+    try {
+      final response = await _dio.get('/bars', queryParameters: {
+        'symbol': 'XAU/USD',
+        'from': from.toIso8601String().split('T').first,
+        'to': to.toIso8601String().split('T').first,
+      });
+
+      if (response.statusCode == 200) {
+        final List<dynamic> barsJson = response.data['bars'] ?? [];
+        return barsJson.map((json) => GoldBarModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load historical bars. Status Code: ${response.statusCode}');
       }
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {

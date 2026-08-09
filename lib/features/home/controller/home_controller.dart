@@ -82,8 +82,20 @@ class HomeController extends GetxController {
   }
 
   void updateChartData() {
-    final allHistory = StorageService().getRecentHistory();
-    if (allHistory.isEmpty) {
+    List<GoldHistoryModel> sourceHistory = [];
+    
+    // Use app-observed snapshots for 24H, canonical market history for 7D/30D
+    if (selectedRange.value == ChartRange.day24h) {
+      sourceHistory = StorageService().getRecentHistory();
+    } else {
+      sourceHistory = StorageService().getMarketHistory();
+      // Fallback to app-observed if market history is completely empty
+      if (sourceHistory.isEmpty) {
+        sourceHistory = StorageService().getRecentHistory();
+      }
+    }
+
+    if (sourceHistory.isEmpty) {
       chartHistory.clear();
       chartHigh.value = null;
       chartLow.value = null;
@@ -95,7 +107,7 @@ class HomeController extends GetxController {
 
     // Deduplicate records with identical timestamps (keep latest record per timestamp)
     final Map<String, GoldHistoryModel> uniqueByTimestamp = {};
-    for (final record in allHistory) {
+    for (final record in sourceHistory) {
       final dt = DateTime.tryParse(record.fetchTimestamp) ?? DateTime.tryParse(record.goldPrice.timestamp);
       if (dt != null) {
         if (dt.isAfter(cutoff) || dt.isAtSameMomentAs(cutoff)) {
@@ -159,6 +171,45 @@ class HomeController extends GetxController {
       );
       await StorageService().saveGoldHistory(newRecord);
       
+      // Fetch Market History in parallel or sequentially
+      try {
+        final to = DateTime.now();
+        final from = to.subtract(const Duration(days: 30));
+        final bars = await GoldApiService().fetchHistoricalBars(from: from, to: to);
+        
+        if (bars.isNotEmpty) {
+          final latestUsdPerGram = bars.last.close / 31.1034768;
+          // Implied exchange rate based on our live INR data and the latest market bar
+          final conversionMultiplier = freshData.priceGram24k / latestUsdPerGram;
+          
+          final marketHistory = bars.map((bar) {
+            final barUsdPerGram = bar.close / 31.1034768;
+            final price24k = barUsdPerGram * conversionMultiplier;
+            final price22k = price24k * (22.0 / 24.0);
+            
+            return GoldHistoryModel(
+              goldPrice: GoldPriceModel(
+                currency: 'INR',
+                timestamp: bar.barStart.toIso8601String(),
+                priceGram24k: price24k,
+                priceGram22k: price22k,
+                priceGram21k: 0.0,
+                priceGram20k: 0.0,
+                priceGram18k: 0.0,
+                priceGram16k: 0.0,
+                priceGram14k: 0.0,
+                priceGram10k: 0.0,
+              ),
+              fetchTimestamp: bar.barStart.toIso8601String(),
+            );
+          }).toList();
+          
+          await StorageService().saveMarketHistory(marketHistory);
+        }
+      } catch (e) {
+        AppLogger.e('Failed to fetch market history', e);
+      }
+
       // Re-calculate price movement and chart with updated history
       priceMovement.value = calculatePriceMovement();
       updateChartData();

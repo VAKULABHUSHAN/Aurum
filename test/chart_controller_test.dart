@@ -145,5 +145,55 @@ void main() {
       expect(controller.chartHigh.value, isNull);
       expect(controller.chartLow.value, isNull);
     });
+
+    test('Uses market history for 7D and 30D, and app-observed history for 24H', () async {
+      final now = DateTime.now();
+      final storage = StorageService();
+
+      // App-observed history (24H)
+      final time1h = now.subtract(const Duration(hours: 1)).toIso8601String();
+      await storage.saveGoldHistory(GoldHistoryModel(
+        goldPrice: createPrice(8400.0, time1h),
+        fetchTimestamp: time1h,
+      ));
+      final time2h = now.subtract(const Duration(hours: 2)).toIso8601String();
+      await storage.saveGoldHistory(GoldHistoryModel(
+        goldPrice: createPrice(8450.0, time2h),
+        fetchTimestamp: time2h,
+      ));
+
+      // Market history (7D / 30D)
+      final time2d = now.subtract(const Duration(days: 2)).toIso8601String();
+      final time5d = now.subtract(const Duration(days: 5)).toIso8601String();
+      final time15d = now.subtract(const Duration(days: 15)).toIso8601String();
+      
+      await storage.saveMarketHistory([
+        GoldHistoryModel(goldPrice: createPrice(8000.0, time2d), fetchTimestamp: time2d),
+        GoldHistoryModel(goldPrice: createPrice(8100.0, time5d), fetchTimestamp: time5d),
+        GoldHistoryModel(goldPrice: createPrice(8200.0, time15d), fetchTimestamp: time15d),
+      ]);
+
+      final controller = HomeController();
+      controller.updateChartData();
+
+      // 24H should use app-observed history (length 2)
+      controller.setChartRange(ChartRange.day24h);
+      controller.updateChartData(); // forcefully update since setChartRange might return early
+      expect(controller.chartHistory.length, 2);
+      expect(controller.chartHigh.value, 8450.0);
+      expect(controller.chartLow.value, 8400.0);
+
+      // 7D should use market history (length 2 because 15d is excluded)
+      controller.setChartRange(ChartRange.week7d);
+      expect(controller.chartHistory.length, 2);
+      expect(controller.chartHigh.value, 8100.0);
+      expect(controller.chartLow.value, 8000.0);
+
+      // 30D should use market history (length 3)
+      controller.setChartRange(ChartRange.month30d);
+      expect(controller.chartHistory.length, 3);
+      expect(controller.chartHigh.value, 8200.0);
+      expect(controller.chartLow.value, 8000.0);
+    });
   });
 }

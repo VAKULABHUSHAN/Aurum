@@ -15,6 +15,9 @@ class StorageService {
   static const String _boxName = 'gold_price_history';
   Box<GoldHistoryModel>? _box;
 
+  static const String _marketBoxName = 'gold_market_history';
+  Box<GoldHistoryModel>? _marketBox;
+
   Future<void> init() async {
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(GoldPriceModelAdapter());
@@ -23,6 +26,7 @@ class StorageService {
       Hive.registerAdapter(GoldHistoryModelAdapter());
     }
     _box = await Hive.openBox<GoldHistoryModel>(_boxName);
+    _marketBox = await Hive.openBox<GoldHistoryModel>(_marketBoxName);
   }
 
   Future<void> saveGoldHistory(GoldHistoryModel newRecord) async {
@@ -40,21 +44,29 @@ class StorageService {
     AppLogger.i('Saved new gold price history record.');
   }
 
+  Future<void> saveMarketHistory(List<GoldHistoryModel> records) async {
+    if (_marketBox == null) return;
+    await _marketBox!.clear();
+    await _marketBox!.addAll(records);
+    AppLogger.i('Saved ${records.length} market history records.');
+  }
+
   GoldHistoryModel? getLatestGoldHistory() {
     if (_box == null || _box!.isEmpty) return null;
-    
-    // Since we append, the latest is the last item
     return _box!.values.last;
   }
 
   List<GoldHistoryModel> getRecentHistory({int? limit}) {
     if (_box == null || _box!.isEmpty) return [];
-    
-    // Hive values are in insertion order (ascending chronological order, oldest first, newest last)
     final all = _box!.values.toList();
     if (limit != null && all.length > limit) {
       return all.sublist(all.length - limit);
     }
     return all;
+  }
+
+  List<GoldHistoryModel> getMarketHistory() {
+    if (_marketBox == null || _marketBox!.isEmpty) return [];
+    return _marketBox!.values.toList();
   }
 }
