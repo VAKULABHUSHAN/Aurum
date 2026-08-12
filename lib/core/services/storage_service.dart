@@ -19,6 +19,8 @@ class StorageService {
   static const String _marketBoxName = 'indian_gold_market_history';
   Box<IndianGoldRateModel>? _marketBox;
 
+  Box<dynamic>? _settingsBox;
+
   Future<void> init() async {
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(GoldPriceModelAdapter());
@@ -31,6 +33,7 @@ class StorageService {
     }
     _box = await Hive.openBox<IndianGoldRateModel>(_boxName);
     _marketBox = await Hive.openBox<IndianGoldRateModel>(_marketBoxName);
+    _settingsBox = await Hive.openBox('aurum_settings');
   }
 
   Future<void> cacheLatestLivePrice(IndianGoldRateModel newRecord) async {
@@ -81,5 +84,13 @@ class StorageService {
   List<IndianGoldRateModel> getMarketHistory() {
     if (_marketBox == null || _marketBox!.isEmpty) return [];
     return _marketBox!.values.toList();
+  }
+
+  bool getNotificationsEnabled() {
+    return _settingsBox?.get('notificationsEnabled', defaultValue: false) ?? false;
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    await _settingsBox?.put('notificationsEnabled', value);
   }
 }

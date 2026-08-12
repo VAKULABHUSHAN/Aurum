@@ -8,8 +8,78 @@ import 'package:aurum/features/home/views/widgets/main_price_card.dart';
 import 'package:aurum/features/home/views/widgets/secondary_price_card.dart';
 import 'package:aurum/features/home/views/widgets/price_history_card.dart';
 
+import 'package:aurum/core/services/notification_service.dart';
+import 'package:aurum/core/services/storage_service.dart';
+
 class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key});
+
+  void _showSettingsBottomSheet() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.lg)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Notifications',
+              style: AppTextStyles.headingMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            StatefulBuilder(
+              builder: (context, setState) {
+                final isEnabled = StorageService().getNotificationsEnabled();
+                return SwitchListTile(
+                  title: const Text('Daily Gold Updates', style: AppTextStyles.body),
+                  subtitle: const Text('09:00 AM · 12:00 PM · 08:00 PM', style: AppTextStyles.label),
+                  value: isEnabled,
+                  activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+                  activeThumbColor: AppColors.primary,
+                  onChanged: (value) async {
+                    if (value) {
+                      final granted = await NotificationService().requestPermission();
+                      if (granted) {
+                        await StorageService().setNotificationsEnabled(true);
+                        await NotificationService().rescheduleAll();
+                        setState(() {});
+                      } else {
+                        Get.snackbar(
+                          'Permission Denied',
+                          'Please enable notifications in Android Settings to receive gold updates.',
+                          backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                          colorText: AppColors.error,
+                        );
+                      }
+                    } else {
+                      await StorageService().setNotificationsEnabled(false);
+                      await NotificationService().cancelAll();
+                      setState(() {});
+                    }
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // Dev-only test notification button
+            TextButton.icon(
+              onPressed: () {
+                NotificationService().showTestGoldPriceNotification();
+              },
+              icon: const Icon(Icons.bug_report, color: AppColors.primaryText),
+              label: const Text('Send Test Notification', style: TextStyle(color: AppColors.primaryText)),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +102,11 @@ class HomeScreen extends GetView<HomeController> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.primaryText),
+            tooltip: 'Settings',
+            onPressed: _showSettingsBottomSheet,
+          ),
           Obx(() {
             final isRefreshing = controller.isRefreshing.value;
             return IconButton(

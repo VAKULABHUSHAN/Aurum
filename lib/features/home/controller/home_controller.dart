@@ -5,6 +5,7 @@ import 'package:aurum/data/models/chart_range.dart';
 import 'package:aurum/core/services/gold_api_service.dart';
 import 'package:aurum/core/services/storage_service.dart';
 import 'package:aurum/core/services/widget_service.dart';
+import 'package:aurum/core/services/notification_service.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
 
@@ -194,6 +195,9 @@ class HomeController extends GetxController {
       
       // Update home screen widget
       await WidgetService.updateGoldPriceWidget(freshData);
+      
+      // Update notifications with fresh data
+      await NotificationService().rescheduleAll();
       
       AppLogger.i('Successfully fetched live gold price.');
     } catch (e) {

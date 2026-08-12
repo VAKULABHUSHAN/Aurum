@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:aurum/core/services/gold_api_service.dart';
 import 'package:aurum/core/services/storage_service.dart';
 import 'package:aurum/core/services/widget_service.dart';
+import 'package:aurum/core/services/notification_service.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 
 @pragma('vm:entry-point')
@@ -16,6 +17,9 @@ void callbackDispatcher() {
       
       // Initialize StorageService (this registers adapters and opens the box)
       await StorageService().init();
+      
+      // Initialize NotificationService in background isolate
+      await NotificationService().init();
 
       // Fetch Live Data
       final freshData = await GoldApiService().fetchIndianGoldRates();
@@ -23,7 +27,6 @@ void callbackDispatcher() {
       await StorageService().cacheLatestLivePrice(freshData);
 
       // Update Widget Data
-      // (WidgetService will be updated separately to accept IndianGoldRateModel)
       await WidgetService.updateGoldPriceWidget(freshData);
 
       // Add to Market History locally (Since API historical data is unavailable)
@@ -34,6 +37,9 @@ void callbackDispatcher() {
       } catch (e) {
         AppLogger.e('Background: Failed to update market history', e);
       }
+      
+      // Update notifications with fresh data
+      await NotificationService().rescheduleAll();
 
       AppLogger.i('BACKGROUND SYNC SUCCESS');
       return Future.value(true);
