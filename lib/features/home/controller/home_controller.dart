@@ -26,7 +26,22 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    debugIndianMarketHistory();
     _loadInitialData();
+  }
+
+  void debugIndianMarketHistory() {
+    final history = StorageService().getMarketHistory();
+    AppLogger.i('INDIAN MARKET HISTORY DEBUG\n---------------------------');
+    AppLogger.i('Total records: ${history.length}');
+    if (history.isNotEmpty) {
+      AppLogger.i('Oldest: ${history.first.rateDate}');
+      AppLogger.i('Newest: ${history.last.rateDate}');
+    }
+    AppLogger.i('Record:\ndate | 24K | 22K | 18K');
+    for (final r in history) {
+      AppLogger.i('${r.rateDate} | ${r.price24kPerGram} | ${r.price22kPerGram} | ${r.price18kPerGram}');
+    }
   }
 
   void _loadInitialData() {
@@ -115,6 +130,13 @@ class HomeController extends GetxController {
     });
 
     chartHistory.assignAll(filtered);
+
+    // DEBUG LOGGING
+    AppLogger.i('CHART DEBUG:\nmarketHistory count = ${sourceHistory.length}\nselectedRange = ${selectedRange.value.label}\nfilteredHistory count = ${filtered.length}');
+    AppLogger.i('For each record:');
+    for (final r in filtered) {
+      AppLogger.i('DATE: ${r.rateDate} (${r.timestamp})\n24K: ${r.price24kPerGram}\n22K: ${r.price22kPerGram}');
+    }
 
     if (filtered.length >= 2) {
       double high = filtered.first.price24kPerGram;
