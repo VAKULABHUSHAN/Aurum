@@ -6,12 +6,12 @@ import 'package:aurum/core/constants/app_spacing.dart';
 import 'package:aurum/core/theme/app_text_styles.dart';
 import 'package:aurum/core/utils/currency_formatter.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/data/models/chart_range.dart';
 import 'package:aurum/features/home/views/widgets/chart_range_selector.dart';
 
 class PriceHistoryCard extends StatelessWidget {
-  final List<GoldHistoryModel> history;
+  final List<IndianGoldRateModel> history;
   final ChartRange selectedRange;
   final ValueChanged<ChartRange> onRangeSelected;
   final double? highPrice;
@@ -124,7 +124,7 @@ class PriceHistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           const Text(
-            'Not enough history yet',
+            'Building price history...',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -135,7 +135,7 @@ class PriceHistoryCard extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Text(
-              'Keep collecting gold prices and your chart will appear here.',
+              'Chart will appear when more data points are collected locally.',
               style: AppTextStyles.label,
               textAlign: TextAlign.center,
             ),
@@ -148,11 +148,11 @@ class PriceHistoryCard extends StatelessWidget {
   Widget _buildChart() {
     final spots = <FlSpot>[];
     for (int i = 0; i < history.length; i++) {
-      spots.add(FlSpot(i.toDouble(), history[i].goldPrice.priceGram24k));
+      spots.add(FlSpot(i.toDouble(), history[i].price24kPerGram));
     }
 
-    final high = highPrice ?? history.first.goldPrice.priceGram24k;
-    final low = lowPrice ?? history.first.goldPrice.priceGram24k;
+    final high = highPrice ?? history.first.price24kPerGram;
+    final low = lowPrice ?? history.first.price24kPerGram;
     final yDiff = (high - low).abs();
     final yPadding = yDiff > 0 ? yDiff * 0.2 : 10.0;
     final minY = (low - yPadding).clamp(0.0, double.infinity);
@@ -189,13 +189,9 @@ class PriceHistoryCard extends StatelessWidget {
                     return const SizedBox.shrink();
                   }
 
-                  final timestamp = history[index].fetchTimestamp.isNotEmpty
-                      ? history[index].fetchTimestamp
-                      : history[index].goldPrice.timestamp;
+                  final timestamp = history[index].timestamp;
 
-                  final label = selectedRange == ChartRange.day24h
-                      ? DateFormatter.formatTime(timestamp)
-                      : DateFormatter.formatShortDate(timestamp);
+                  final label = DateFormatter.formatShortDate(timestamp);
 
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -224,14 +220,10 @@ class PriceHistoryCard extends StatelessWidget {
                 return touchedSpots.map((spot) {
                   final index = spot.x.toInt();
                   final timestamp = (index >= 0 && index < history.length)
-                      ? (history[index].fetchTimestamp.isNotEmpty
-                          ? history[index].fetchTimestamp
-                          : history[index].goldPrice.timestamp)
+                      ? history[index].timestamp
                       : '';
 
-                  final formattedTime = selectedRange == ChartRange.day24h
-                      ? DateFormatter.formatTime(timestamp)
-                      : DateFormatter.formatFullDateTime(timestamp);
+                  final formattedTime = DateFormatter.formatFullDateTime(timestamp);
 
                   final formattedPrice = CurrencyFormatter.formatPrice(spot.y);
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/core/utils/currency_formatter.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
 import 'package:aurum/core/utils/app_logger.dart';
@@ -10,10 +10,10 @@ import 'package:aurum/features/home/views/widgets/widget_chart_renderer.dart';
 class WidgetService {
   static const String _androidWidgetName = 'AurumWidgetProvider';
 
-  static Future<void> updateGoldPriceWidget(GoldPriceModel data) async {
+  static Future<void> updateGoldPriceWidget(IndianGoldRateModel data) async {
     try {
-      final formatted24k = CurrencyFormatter.formatPrice(data.priceGram24k);
-      final formatted22k = CurrencyFormatter.formatPrice(data.priceGram22k);
+      final formatted24k = CurrencyFormatter.formatPrice(data.price24kPerGram);
+      final formatted22k = CurrencyFormatter.formatPrice(data.price22kPerGram);
       
       // The widget wants "Updated 03:27 PM"
       final timeStr = DateFormatter.formatTime(data.timestamp);
@@ -21,7 +21,7 @@ class WidgetService {
 
       await HomeWidget.saveWidgetData<String>('gold_24k_price', formatted24k);
       await HomeWidget.saveWidgetData<String>('gold_22k_price', '22K: $formatted22k');
-      await HomeWidget.saveWidgetData<String>('gold_currency', data.currency);
+      await HomeWidget.saveWidgetData<String>('gold_currency', 'INR');
       await HomeWidget.saveWidgetData<String>('gold_updated_at', formattedTime);
 
       try {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/core/constants/app_colors.dart';
 
 class WidgetChartRenderer extends StatelessWidget {
-  final List<GoldHistoryModel> history;
+  final List<IndianGoldRateModel> history;
 
   const WidgetChartRenderer({super.key, required this.history});
 
@@ -16,22 +16,22 @@ class WidgetChartRenderer extends StatelessWidget {
       );
     }
 
-    final sortedHistory = List<GoldHistoryModel>.from(history);
+    final sortedHistory = List<IndianGoldRateModel>.from(history);
     sortedHistory.sort((a, b) {
-      final dtA = DateTime.tryParse(a.fetchTimestamp) ?? DateTime.tryParse(a.goldPrice.timestamp) ?? DateTime(0);
-      final dtB = DateTime.tryParse(b.fetchTimestamp) ?? DateTime.tryParse(b.goldPrice.timestamp) ?? DateTime(0);
+      final dtA = DateTime.tryParse(a.timestamp) ?? DateTime(0);
+      final dtB = DateTime.tryParse(b.timestamp) ?? DateTime(0);
       return dtA.compareTo(dtB);
     });
 
     final spots = <FlSpot>[];
     for (int i = 0; i < sortedHistory.length; i++) {
-      spots.add(FlSpot(i.toDouble(), sortedHistory[i].goldPrice.priceGram24k));
+      spots.add(FlSpot(i.toDouble(), sortedHistory[i].price24kPerGram));
     }
 
-    double high = sortedHistory.first.goldPrice.priceGram24k;
-    double low = sortedHistory.first.goldPrice.priceGram24k;
+    double high = sortedHistory.first.price24kPerGram;
+    double low = sortedHistory.first.price24kPerGram;
     for (final r in sortedHistory) {
-      final p = r.goldPrice.priceGram24k;
+      final p = r.price24kPerGram;
       if (p > high) high = p;
       if (p < low) low = p;
     }

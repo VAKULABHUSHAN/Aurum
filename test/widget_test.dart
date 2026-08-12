@@ -3,8 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:aurum/core/services/storage_service.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/features/home/controller/home_controller.dart';
 import 'package:aurum/features/home/views/home_screen.dart';
 
@@ -28,25 +27,18 @@ void main() {
   });
 
   testWidgets('HomeScreen renders dashboard with title, 24K and 22K cards', (WidgetTester tester) async {
-    final sampleGoldPrice = GoldPriceModel(
-      currency: 'INR',
+    final sampleGoldPrice = IndianGoldRateModel(
+      price24kPerGram: 8450.50,
+      price22kPerGram: 7746.29,
+      price18kPerGram: 6337.88,
       timestamp: '2026-08-09T10:00:00Z',
-      priceGram24k: 8450.50,
-      priceGram22k: 7746.29,
-      priceGram21k: 7394.19,
-      priceGram20k: 7042.08,
-      priceGram18k: 6337.88,
-      priceGram16k: 5633.67,
-      priceGram14k: 4929.46,
-      priceGram10k: 3521.04,
+      source: 'IBJA Benchmark',
+      unit: 'INR/g',
+      session: 'AM',
+      rateDate: '2026-08-09',
     );
 
-    await StorageService().cacheLatestLivePrice(
-      GoldHistoryModel(
-        goldPrice: sampleGoldPrice,
-        fetchTimestamp: sampleGoldPrice.timestamp,
-      ),
-    );
+    await StorageService().cacheLatestLivePrice(sampleGoldPrice);
 
     final controller = Get.put(HomeController());
     controller.isLoading.value = false;
@@ -77,8 +69,8 @@ void main() {
 
     // Verify Price History card
     expect(find.text('Price History'), findsOneWidget);
-    expect(find.text('24H'), findsOneWidget);
     expect(find.text('7D'), findsOneWidget);
     expect(find.text('30D'), findsOneWidget);
+    expect(find.text('24H'), findsNothing);
   });
 }

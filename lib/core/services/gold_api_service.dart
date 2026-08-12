@@ -5,6 +5,7 @@ import 'package:aurum/core/constants/api_constants.dart';
 import 'package:aurum/core/utils/app_logger.dart';
 import 'package:aurum/data/models/gold_price_model.dart';
 import 'package:aurum/data/models/gold_bar_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 
 class GoldApiService {
   static final GoldApiService _instance = GoldApiService._internal();
@@ -62,6 +63,51 @@ class GoldApiService {
     }
 
     return Exception('UNKNOWN_API_ERROR: ${e.message}');
+  }
+
+  Future<IndianGoldRateModel> fetchIndianGoldRates() async {
+    AppLogger.i('INDIAN GOLD API REQUEST');
+    try {
+      final response = await _dio.get('https://ibja-api.vercel.app/latest');
+
+      if (response.statusCode == 200) {
+        final model = IndianGoldRateModel.fromJson(response.data);
+        
+        // Validation - VERY IMPORTANT
+        if (model.price24kPerGram <= 0 || model.price22kPerGram <= 0 || model.price18kPerGram <= 0) {
+          AppLogger.e('INVALID GOLD PRICE RESPONSE: Prices must be > 0');
+          throw Exception('INVALID_GOLD_PRICE');
+        }
+        if (model.price24kPerGram.isNaN || model.price22kPerGram.isNaN || model.price18kPerGram.isNaN) {
+          AppLogger.e('INVALID GOLD PRICE RESPONSE: Prices must not be NaN');
+          throw Exception('INVALID_GOLD_PRICE');
+        }
+        if (model.price24kPerGram.isInfinite || model.price22kPerGram.isInfinite || model.price18kPerGram.isInfinite) {
+          AppLogger.e('INVALID GOLD PRICE RESPONSE: Prices must not be Infinity');
+          throw Exception('INVALID_GOLD_PRICE');
+        }
+        if (model.price24kPerGram <= model.price22kPerGram) {
+          AppLogger.e('INVALID GOLD PRICE RESPONSE: 24K must be > 22K');
+          throw Exception('INVALID_GOLD_PRICE');
+        }
+        if (model.price22kPerGram <= model.price18kPerGram) {
+          AppLogger.e('INVALID GOLD PRICE RESPONSE: 22K must be > 18K');
+          throw Exception('INVALID_GOLD_PRICE');
+        }
+
+        AppLogger.i('INDIAN GOLD API SUCCESS\n24K: ₹${model.price24kPerGram}\n22K: ₹${model.price22kPerGram}\n18K: ₹${model.price18kPerGram}');
+        return model;
+      } else {
+        AppLogger.e('INDIAN GOLD API FAILURE: Status Code: ${response.statusCode}');
+        throw Exception('API_ERROR');
+      }
+    } on DioException catch (e) {
+      AppLogger.e('INDIAN GOLD API FAILURE: ${e.message}');
+      throw _handleDioException(e);
+    } catch (e) {
+      AppLogger.e('INDIAN GOLD API FAILURE: $e');
+      throw Exception('An unexpected error occurred: $e');
+    }
   }
 
   Future<GoldPriceModel> fetchLiveGoldPrice() async {

@@ -2,26 +2,23 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:aurum/core/services/storage_service.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/features/home/controller/home_controller.dart';
 import 'package:get/get.dart';
 
 void main() {
   late Directory tempDir;
 
-  GoldPriceModel createPrice(double price24k, String timestamp) {
-    return GoldPriceModel(
-      currency: 'INR',
+  IndianGoldRateModel createPrice(double price24k, String timestamp, String session) {
+    return IndianGoldRateModel(
+      price24kPerGram: price24k,
+      price22kPerGram: price24k * 0.916,
+      price18kPerGram: price24k * 0.750,
       timestamp: timestamp,
-      priceGram24k: price24k,
-      priceGram22k: price24k * 0.916,
-      priceGram21k: price24k * 0.875,
-      priceGram20k: price24k * 0.833,
-      priceGram18k: price24k * 0.750,
-      priceGram16k: price24k * 0.666,
-      priceGram14k: price24k * 0.583,
-      priceGram10k: price24k * 0.416,
+      source: 'IBJA Benchmark',
+      unit: 'INR/g',
+      session: session,
+      rateDate: timestamp.split('T')[0],
     );
   }
 
@@ -45,10 +42,7 @@ void main() {
     test('calculatePriceMovement returns null when fewer than 2 records exist', () async {
       final storage = StorageService();
       await storage.saveMarketHistory([
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T10:00:00Z'),
-          fetchTimestamp: '2026-08-09T10:00:00Z',
-        ),
+        createPrice(8000.0, '2026-08-09T10:00:00Z', 'AM'),
       ]);
 
       final controller = HomeController();
@@ -58,14 +52,8 @@ void main() {
     test('calculatePriceMovement calculates positive movement correctly', () async {
       final storage = StorageService();
       await storage.saveMarketHistory([
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T10:00:00Z'),
-          fetchTimestamp: '2026-08-09T10:00:00Z',
-        ),
-        GoldHistoryModel(
-          goldPrice: createPrice(8080.0, '2026-08-09T11:00:00Z'),
-          fetchTimestamp: '2026-08-09T11:00:00Z',
-        ),
+        createPrice(8000.0, '2026-08-09T10:00:00Z', 'AM'),
+        createPrice(8080.0, '2026-08-10T10:00:00Z', 'AM'),
       ]);
 
       final controller = HomeController();
@@ -80,14 +68,8 @@ void main() {
     test('calculatePriceMovement calculates negative movement correctly', () async {
       final storage = StorageService();
       await storage.saveMarketHistory([
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T10:00:00Z'),
-          fetchTimestamp: '2026-08-09T10:00:00Z',
-        ),
-        GoldHistoryModel(
-          goldPrice: createPrice(7920.0, '2026-08-09T11:00:00Z'),
-          fetchTimestamp: '2026-08-09T11:00:00Z',
-        ),
+        createPrice(8000.0, '2026-08-09T10:00:00Z', 'AM'),
+        createPrice(7920.0, '2026-08-10T10:00:00Z', 'AM'),
       ]);
 
       final controller = HomeController();
@@ -102,18 +84,9 @@ void main() {
     test('calculatePriceMovement ignores consecutive duplicate price records and finds prior distinct price', () async {
       final storage = StorageService();
       await storage.saveMarketHistory([
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T09:00:00Z'),
-          fetchTimestamp: '2026-08-09T09:00:00Z',
-        ),
-        GoldHistoryModel(
-          goldPrice: createPrice(8100.0, '2026-08-09T10:00:00Z'),
-          fetchTimestamp: '2026-08-09T10:00:00Z',
-        ),
-        GoldHistoryModel(
-          goldPrice: createPrice(8100.0, '2026-08-09T11:00:00Z'),
-          fetchTimestamp: '2026-08-09T11:00:00Z',
-        ),
+        createPrice(8000.0, '2026-08-08T09:00:00Z', 'AM'),
+        createPrice(8100.0, '2026-08-09T10:00:00Z', 'AM'),
+        createPrice(8100.0, '2026-08-10T11:00:00Z', 'AM'),
       ]);
 
       final controller = HomeController();
@@ -128,14 +101,8 @@ void main() {
     test('calculatePriceMovement returns null if all previous prices are duplicates of current', () async {
       final storage = StorageService();
       await storage.saveMarketHistory([
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T09:00:00Z'),
-          fetchTimestamp: '2026-08-09T09:00:00Z',
-        ),
-        GoldHistoryModel(
-          goldPrice: createPrice(8000.0, '2026-08-09T10:00:00Z'),
-          fetchTimestamp: '2026-08-09T10:00:00Z',
-        ),
+        createPrice(8000.0, '2026-08-09T09:00:00Z', 'AM'),
+        createPrice(8000.0, '2026-08-10T10:00:00Z', 'AM'),
       ]);
 
       final controller = HomeController();

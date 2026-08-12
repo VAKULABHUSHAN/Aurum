@@ -5,12 +5,12 @@ import 'package:aurum/core/constants/app_spacing.dart';
 import 'package:aurum/core/theme/app_text_styles.dart';
 import 'package:aurum/core/utils/currency_formatter.dart';
 import 'package:aurum/core/utils/date_formatter.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/data/models/price_movement.dart';
 import 'package:aurum/features/home/views/widgets/price_movement_badge.dart';
 
 class MainPriceCard extends StatelessWidget {
-  final GoldPriceModel priceData;
+  final IndianGoldRateModel priceData;
   final PriceMovement? movement;
   final String lastUpdated;
   final bool isOffline;
@@ -89,7 +89,7 @@ class MainPriceCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            CurrencyFormatter.formatPrice(priceData.priceGram24k),
+            CurrencyFormatter.formatPrice(priceData.price24kPerGram),
             style: AppTextStyles.priceLarge,
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -104,9 +104,22 @@ class MainPriceCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            'Updated at $formattedTime',
-            style: AppTextStyles.label,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Updated at $formattedTime',
+                style: AppTextStyles.label,
+              ),
+              const Text(
+                'IBJA Benchmark · Indicative',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -3,26 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:aurum/core/services/storage_service.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/data/models/chart_range.dart';
 import 'package:aurum/features/home/controller/home_controller.dart';
 
 void main() {
   late Directory tempDir;
 
-  GoldPriceModel createPrice(double price24k, String timestamp) {
-    return GoldPriceModel(
-      currency: 'INR',
+  IndianGoldRateModel createPrice(double price24k, String timestamp, String session) {
+    return IndianGoldRateModel(
+      price24kPerGram: price24k,
+      price22kPerGram: price24k * 0.916,
+      price18kPerGram: price24k * 0.750,
       timestamp: timestamp,
-      priceGram24k: price24k,
-      priceGram22k: price24k * 0.916,
-      priceGram21k: price24k * 0.875,
-      priceGram20k: price24k * 0.833,
-      priceGram18k: price24k * 0.750,
-      priceGram16k: price24k * 0.666,
-      priceGram14k: price24k * 0.583,
-      priceGram10k: price24k * 0.416,
+      source: 'IBJA Benchmark',
+      unit: 'INR/g',
+      session: session,
+      rateDate: timestamp.split('T')[0],
     );
   }
 
@@ -51,45 +48,39 @@ void main() {
       expect(controller.chartLow.value, isNull);
     });
 
-    test('Filters records by range (24H vs 7D vs 30D)', () async {
+    test('Filters records by range (7D vs 30D)', () async {
       final now = DateTime.now();
       final storage = StorageService();
 
-      // Record 1: 2 hours ago (within 24H, 7D, 30D)
+      // Record 1: 2 hours ago (within 7D, 30D)
       final time2h = now.subtract(const Duration(hours: 2)).toIso8601String();
-      // Record 2: 10 hours ago (within 24H, 7D, 30D)
-      final time10h = now.subtract(const Duration(hours: 10)).toIso8601String();
-      // Record 3: 3 days ago (outside 24H, within 7D, 30D)
+      // Record 2: 3 days ago (within 7D, 30D)
       final time3d = now.subtract(const Duration(days: 3)).toIso8601String();
-      // Record 4: 15 days ago (outside 24H and 7D, within 30D)
+      // Record 3: 15 days ago (outside 7D, within 30D)
       final time15d = now.subtract(const Duration(days: 15)).toIso8601String();
+      // Record 4: 40 days ago (outside 30D)
+      final time40d = now.subtract(const Duration(days: 40)).toIso8601String();
 
       await storage.saveMarketHistory([
-        GoldHistoryModel(goldPrice: createPrice(8400.0, time2h), fetchTimestamp: time2h),
-        GoldHistoryModel(goldPrice: createPrice(8450.0, time10h), fetchTimestamp: time10h),
-        GoldHistoryModel(goldPrice: createPrice(8300.0, time3d), fetchTimestamp: time3d),
-        GoldHistoryModel(goldPrice: createPrice(8200.0, time15d), fetchTimestamp: time15d),
+        createPrice(8400.0, time2h, 'PM'),
+        createPrice(8300.0, time3d, 'PM'),
+        createPrice(8200.0, time15d, 'PM'),
+        createPrice(8100.0, time40d, 'PM'),
       ]);
 
       final controller = HomeController();
       controller.updateChartData();
 
-      // 24H range
-      controller.setChartRange(ChartRange.day24h);
-      expect(controller.chartHistory.length, 2);
-      expect(controller.chartHigh.value, 8450.0);
-      expect(controller.chartLow.value, 8400.0);
-
       // 7D range
       controller.setChartRange(ChartRange.week7d);
-      expect(controller.chartHistory.length, 3);
-      expect(controller.chartHigh.value, 8450.0);
+      expect(controller.chartHistory.length, 2);
+      expect(controller.chartHigh.value, 8400.0);
       expect(controller.chartLow.value, 8300.0);
 
       // 30D range
       controller.setChartRange(ChartRange.month30d);
-      expect(controller.chartHistory.length, 4);
-      expect(controller.chartHigh.value, 8450.0);
+      expect(controller.chartHistory.length, 3);
+      expect(controller.chartHigh.value, 8400.0);
       expect(controller.chartLow.value, 8200.0);
     });
 
@@ -100,16 +91,20 @@ void main() {
 
       // Same timestamp, different price. saveMarketHistory will handle it.
       await storage.saveMarketHistory([
-        GoldHistoryModel(goldPrice: createPrice(8350.0, fixedTimestamp), fetchTimestamp: fixedTimestamp)
+        createPrice(8350.0, fixedTimestamp, 'AM')
       ]);
       await storage.saveMarketHistory([
-        GoldHistoryModel(goldPrice: createPrice(8420.0, fixedTimestamp), fetchTimestamp: fixedTimestamp)
+        createPrice(8420.0, fixedTimestamp, 'PM')
       ]);
 
       final controller = HomeController();
       controller.updateChartData();
+      
+      // Because rateDate + session are used for uniqueness in uniqueByTimestamp... wait!
+      // In HomeController updateChartData we used: `uniqueByTimestamp[dateKey] = record;` (PM overwrites AM)
       expect(controller.chartHistory.length, 1);
       expect(controller.chartHigh.value, isNull); // only 1 record, so high/low are null
+      expect(controller.chartHistory.first.price24kPerGram, 8420.0);
     });
 
     test('High / Low are null when fewer than 2 records in range', () async {
@@ -118,7 +113,7 @@ void main() {
       final time1h = now.subtract(const Duration(hours: 1)).toIso8601String();
 
       await storage.saveMarketHistory([
-        GoldHistoryModel(goldPrice: createPrice(8420.0, time1h), fetchTimestamp: time1h)
+        createPrice(8420.0, time1h, 'PM')
       ]);
 
       final controller = HomeController();
@@ -138,9 +133,9 @@ void main() {
       final time15d = now.subtract(const Duration(days: 15)).toIso8601String();
       
       await storage.saveMarketHistory([
-        GoldHistoryModel(goldPrice: createPrice(8000.0, time2d), fetchTimestamp: time2d),
-        GoldHistoryModel(goldPrice: createPrice(8100.0, time5d), fetchTimestamp: time5d),
-        GoldHistoryModel(goldPrice: createPrice(8200.0, time15d), fetchTimestamp: time15d),
+        createPrice(8000.0, time2d, 'PM'),
+        createPrice(8100.0, time5d, 'PM'),
+        createPrice(8200.0, time15d, 'PM'),
       ]);
 
       final controller = HomeController();

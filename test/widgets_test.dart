@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
-import 'package:aurum/data/models/gold_history_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 import 'package:aurum/data/models/price_movement.dart';
 import 'package:aurum/data/models/chart_range.dart';
 import 'package:aurum/features/home/views/widgets/main_price_card.dart';
@@ -10,21 +9,19 @@ import 'package:aurum/features/home/views/widgets/price_movement_badge.dart';
 import 'package:aurum/features/home/views/widgets/price_history_card.dart';
 
 void main() {
-  final sampleGoldPrice = GoldPriceModel(
-    currency: 'INR',
+  final sampleGoldPrice = IndianGoldRateModel(
+    price24kPerGram: 8450.50,
+    price22kPerGram: 7746.29,
+    price18kPerGram: 6337.88,
     timestamp: '2026-08-09T10:30:00Z',
-    priceGram24k: 8450.50,
-    priceGram22k: 7746.29,
-    priceGram21k: 7394.19,
-    priceGram20k: 7042.08,
-    priceGram18k: 6337.88,
-    priceGram16k: 5633.67,
-    priceGram14k: 4929.46,
-    priceGram10k: 3521.04,
+    source: 'IBJA Benchmark',
+    unit: 'INR/g',
+    session: 'AM',
+    rateDate: '2026-08-09',
   );
 
   group('Widget Tests', () {
-    testWidgets('MainPriceCard displays 24K price, per gram, and timestamp', (WidgetTester tester) async {
+    testWidgets('MainPriceCard displays 24K price, per gram, timestamp and IBJA label', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -42,6 +39,7 @@ void main() {
       expect(find.text('₹8,450.50'), findsOneWidget);
       expect(find.text('per gram'), findsOneWidget);
       expect(find.text('Updated at 10:30 AM'), findsOneWidget);
+      expect(find.text('IBJA Benchmark · Indicative'), findsOneWidget);
       expect(find.text('↑ ₹15.00 (+0.18%)'), findsOneWidget);
       expect(find.text('Offline Data'), findsNothing);
     });
@@ -86,12 +84,9 @@ void main() {
           home: Scaffold(
             body: PriceHistoryCard(
               history: [
-                GoldHistoryModel(
-                  goldPrice: sampleGoldPrice,
-                  fetchTimestamp: '2026-08-09T10:30:00Z',
-                ),
+                sampleGoldPrice,
               ],
-              selectedRange: ChartRange.day24h,
+              selectedRange: ChartRange.week7d,
               onRangeSelected: (_) {},
               highPrice: null,
               lowPrice: null,
@@ -101,16 +96,25 @@ void main() {
       );
 
       expect(find.text('Price History'), findsOneWidget);
-      expect(find.text('24H'), findsOneWidget);
       expect(find.text('7D'), findsOneWidget);
       expect(find.text('30D'), findsOneWidget);
-      expect(find.text('Not enough history yet'), findsOneWidget);
-      expect(find.text('Keep collecting gold prices and your chart will appear here.'), findsOneWidget);
+      expect(find.text('24H'), findsNothing);
+      expect(find.text('Building price history...'), findsOneWidget);
+      expect(find.text('Chart will appear when more data points are collected locally.'), findsOneWidget);
       expect(find.text('High  '), findsNothing);
     });
 
     testWidgets('PriceHistoryCard shows chart and High/Low when >= 2 records', (WidgetTester tester) async {
-      final sampleGoldPrice2 = sampleGoldPrice.copyWith(priceGram24k: 8480.0);
+      final sampleGoldPrice2 = IndianGoldRateModel(
+        price24kPerGram: 8480.00,
+        price22kPerGram: 7746.29,
+        price18kPerGram: 6337.88,
+        timestamp: '2026-08-09T10:30:00Z',
+        source: 'IBJA Benchmark',
+        unit: 'INR/g',
+        session: 'PM',
+        rateDate: '2026-08-09',
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -118,16 +122,10 @@ void main() {
             body: SingleChildScrollView(
               child: PriceHistoryCard(
                 history: [
-                  GoldHistoryModel(
-                    goldPrice: sampleGoldPrice,
-                    fetchTimestamp: '2026-08-09T08:30:00Z',
-                  ),
-                  GoldHistoryModel(
-                    goldPrice: sampleGoldPrice2,
-                    fetchTimestamp: '2026-08-09T10:30:00Z',
-                  ),
+                  sampleGoldPrice,
+                  sampleGoldPrice2,
                 ],
-                selectedRange: ChartRange.day24h,
+                selectedRange: ChartRange.week7d,
                 onRangeSelected: (_) {},
                 highPrice: 8480.0,
                 lowPrice: 8450.5,
@@ -142,7 +140,7 @@ void main() {
       expect(find.text('₹8,480.00'), findsOneWidget);
       expect(find.text('Low  '), findsOneWidget);
       expect(find.text('₹8,450.50'), findsOneWidget);
-      expect(find.text('Not enough history yet'), findsNothing);
+      expect(find.text('Building price history...'), findsNothing);
     });
   });
 }

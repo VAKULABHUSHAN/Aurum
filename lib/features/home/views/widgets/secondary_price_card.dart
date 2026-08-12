@@ -4,10 +4,10 @@ import 'package:aurum/core/constants/app_radius.dart';
 import 'package:aurum/core/constants/app_spacing.dart';
 import 'package:aurum/core/theme/app_text_styles.dart';
 import 'package:aurum/core/utils/currency_formatter.dart';
-import 'package:aurum/data/models/gold_price_model.dart';
+import 'package:aurum/data/models/indian_gold_rate_model.dart';
 
 class SecondaryPriceCard extends StatelessWidget {
-  final GoldPriceModel priceData;
+  final IndianGoldRateModel priceData;
 
   const SecondaryPriceCard({
     super.key,
@@ -53,7 +53,7 @@ class SecondaryPriceCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            CurrencyFormatter.formatPrice(priceData.priceGram22k),
+            CurrencyFormatter.formatPrice(priceData.price22kPerGram),
             style: AppTextStyles.priceMedium,
           ),
           const SizedBox(height: AppSpacing.xs),
