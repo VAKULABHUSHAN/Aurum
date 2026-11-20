@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, unused_local_variable
 import 'package:dio/dio.dart';
 
 void main() async {

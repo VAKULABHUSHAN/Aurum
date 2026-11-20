@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:aurum/data/models/gold_price_model.dart';
 import 'package:aurum/data/models/gold_history_model.dart';
@@ -92,5 +93,24 @@ class StorageService {
 
   Future<void> setNotificationsEnabled(bool value) async {
     await _settingsBox?.put('notificationsEnabled', value);
+  }
+
+  static const String _themeModeKey = 'themeMode';
+
+  ThemeMode getThemeMode() {
+    final mode = _settingsBox?.get(_themeModeKey, defaultValue: 'system');
+    switch (mode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _settingsBox?.put(_themeModeKey, mode.name);
   }
 }

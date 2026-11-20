@@ -33,14 +33,14 @@ class MainPriceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceOf(context),
         borderRadius: AppRadius.roundedMedium,
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: const [
+        border: Border.all(color: AppColors.borderOf(context), width: 1),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x08000000),
+            color: AppColors.cardShadowOf(context),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -62,9 +62,9 @@ class MainPriceCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  const Text(
+                  Text(
                     '24K Gold • India',
-                    style: AppTextStyles.cardTitle,
+                    style: AppTextStyles.cardTitleOf(context),
                   ),
                 ],
               ),
@@ -72,16 +72,16 @@ class MainPriceCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.neutralLight,
+                    color: AppColors.neutralLightOf(context),
                     borderRadius: AppRadius.roundedSmall,
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: AppColors.borderOf(context)),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Offline Data',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.secondaryText,
+                      color: AppColors.secondaryTextOf(context),
                     ),
                   ),
                 ),
@@ -90,33 +90,33 @@ class MainPriceCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             CurrencyFormatter.formatPrice(priceData.price24kPerGram),
-            style: AppTextStyles.priceLarge,
+            style: AppTextStyles.priceLargeOf(context),
           ),
           const SizedBox(height: AppSpacing.xs),
-          const Text(
+          Text(
             'per gram',
-            style: AppTextStyles.subtitle,
+            style: AppTextStyles.subtitleOf(context),
           ),
           if (movement != null) ...[
             const SizedBox(height: AppSpacing.md),
             PriceMovementBadge(movement: movement!),
           ],
           const SizedBox(height: AppSpacing.lg),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.borderOf(context)),
           const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Updated at $formattedTime',
-                style: AppTextStyles.label,
+                style: AppTextStyles.labelOf(context),
               ),
-              const Text(
+              Text(
                 'IBJA Benchmark · Indicative',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.secondaryText,
+                  color: AppColors.secondaryTextOf(context),
                 ),
               ),
             ],

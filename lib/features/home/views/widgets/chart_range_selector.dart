@@ -15,10 +15,12 @@ class ChartRangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.neutralLight,
+        color: AppColors.neutralLightOf(context),
         borderRadius: AppRadius.roundedSmall,
       ),
       child: Row(
@@ -32,14 +34,14 @@ class ChartRangeSelector extends StatelessWidget {
               curve: Curves.easeInOut,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.surface : Colors.transparent,
+                color: isSelected ? AppColors.surfaceOf(context) : Colors.transparent,
                 borderRadius: AppRadius.roundedSmall,
                 boxShadow: isSelected
-                    ? const [
+                    ? [
                         BoxShadow(
-                          color: Color(0x0F000000),
+                          color: isDark ? const Color(0x33000000) : const Color(0x0F000000),
                           blurRadius: 4,
-                          offset: Offset(0, 1),
+                          offset: const Offset(0, 1),
                         ),
                       ]
                     : null,
@@ -49,7 +51,9 @@ class ChartRangeSelector extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? AppColors.primaryText : AppColors.secondaryText,
+                  color: isSelected
+                      ? AppColors.primaryTextOf(context)
+                      : AppColors.secondaryTextOf(context),
                 ),
               ),
             ),

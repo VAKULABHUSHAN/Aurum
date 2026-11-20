@@ -34,14 +34,14 @@ class PriceHistoryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceOf(context),
         borderRadius: AppRadius.roundedMedium,
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: const [
+        border: Border.all(color: AppColors.borderOf(context), width: 1),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x08000000),
+            color: AppColors.cardShadowOf(context),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -53,9 +53,9 @@ class PriceHistoryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'Price History',
-                style: AppTextStyles.cardTitle,
+                style: AppTextStyles.cardTitleOf(context),
               ),
               ChartRangeSelector(
                 selectedRange: selectedRange,
@@ -71,11 +71,11 @@ class PriceHistoryCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text('High  ', style: AppTextStyles.label),
+                    Text('High  ', style: AppTextStyles.labelOf(context)),
                     Text(
                       CurrencyFormatter.formatPrice(highPrice!),
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.primaryText,
+                        color: AppColors.primaryTextOf(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -84,11 +84,11 @@ class PriceHistoryCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.lg),
                 Row(
                   children: [
-                    const Text('Low  ', style: AppTextStyles.label),
+                    Text('Low  ', style: AppTextStyles.labelOf(context)),
                     Text(
                       CurrencyFormatter.formatPrice(lowPrice!),
                       style: AppTextStyles.label.copyWith(
-                        color: AppColors.primaryText,
+                        color: AppColors.primaryTextOf(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -101,15 +101,15 @@ class PriceHistoryCard extends StatelessWidget {
 
           // Chart or Empty State
           if (!hasEnoughData)
-            _buildEmptyState()
+            _buildEmptyState(context)
           else
-            _buildChart(),
+            _buildChart(context),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       height: 180,
       width: double.infinity,
@@ -123,20 +123,20 @@ class PriceHistoryCard extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
+          Text(
             'Building price history...',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryText,
+              color: AppColors.primaryTextOf(context),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Text(
               'Chart will appear when more data points are collected locally.',
-              style: AppTextStyles.label,
+              style: AppTextStyles.labelOf(context),
               textAlign: TextAlign.center,
             ),
           ),
@@ -145,7 +145,7 @@ class PriceHistoryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChart() {
+  Widget _buildChart(BuildContext context) {
     final spots = <FlSpot>[];
     for (int i = 0; i < history.length; i++) {
       spots.add(FlSpot(i.toDouble(), history[i].price24kPerGram));
@@ -168,10 +168,10 @@ class PriceHistoryCard extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             horizontalInterval: yDiff > 0 ? (yDiff / 2) : 5,
-            getDrawingHorizontalLine: (value) => const FlLine(
-              color: AppColors.border,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: AppColors.borderOf(context),
               strokeWidth: 1,
-              dashArray: [4, 4],
+              dashArray: const [4, 4],
             ),
           ),
           titlesData: FlTitlesData(
@@ -190,17 +190,16 @@ class PriceHistoryCard extends StatelessWidget {
                   }
 
                   final timestamp = history[index].timestamp;
-
                   final label = DateFormatter.formatShortDate(timestamp);
 
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.secondaryText,
+                        color: AppColors.secondaryTextOf(context),
                       ),
                     ),
                   );
@@ -212,7 +211,7 @@ class PriceHistoryCard extends StatelessWidget {
           lineTouchData: LineTouchData(
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (touchedSpot) => AppColors.primaryText,
+              getTooltipColor: (touchedSpot) => AppColors.surfaceOf(context),
               fitInsideHorizontally: true,
               fitInsideVertically: true,
               tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -224,13 +223,12 @@ class PriceHistoryCard extends StatelessWidget {
                       : '';
 
                   final formattedTime = DateFormatter.formatFullDateTime(timestamp);
-
                   final formattedPrice = CurrencyFormatter.formatPrice(spot.y);
 
                   return LineTooltipItem(
                     '$formattedPrice\n$formattedTime',
-                    const TextStyle(
-                      color: Colors.white,
+                    TextStyle(
+                      color: AppColors.primaryTextOf(context),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       height: 1.3,

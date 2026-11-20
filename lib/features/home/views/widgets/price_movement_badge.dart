@@ -15,18 +15,19 @@ class PriceMovementBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor;
     final Color backgroundColor;
 
     if (movement.isPositive) {
-      textColor = AppColors.success;
-      backgroundColor = AppColors.successLight;
+      textColor = isDark ? AppColors.successDark : AppColors.successLight;
+      backgroundColor = isDark ? AppColors.successBgDark : AppColors.successBgLight;
     } else if (movement.isNegative) {
-      textColor = AppColors.error;
-      backgroundColor = AppColors.errorLight;
+      textColor = isDark ? AppColors.errorDarkColor : AppColors.errorLightColor;
+      backgroundColor = isDark ? AppColors.errorBgDark : AppColors.errorBgLight;
     } else {
-      textColor = AppColors.neutral;
-      backgroundColor = AppColors.neutralLight;
+      textColor = isDark ? AppColors.neutralTextDark : AppColors.neutralTextLight;
+      backgroundColor = isDark ? AppColors.neutralDarkBg : AppColors.neutralLightBg;
     }
 
     final changeText = CurrencyFormatter.formatChange(movement.amountChange);

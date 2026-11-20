@@ -20,14 +20,14 @@ class SecondaryPriceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceOf(context),
         borderRadius: AppRadius.roundedMedium,
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: const [
+        border: Border.all(color: AppColors.borderOf(context), width: 1),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x08000000),
+            color: AppColors.cardShadowOf(context),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -45,21 +45,21 @@ class SecondaryPriceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Text(
+              Text(
                 '22K Gold • India',
-                style: AppTextStyles.cardTitle,
+                style: AppTextStyles.cardTitleOf(context),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             CurrencyFormatter.formatPrice(priceData.price22kPerGram),
-            style: AppTextStyles.priceMedium,
+            style: AppTextStyles.priceMediumOf(context),
           ),
           const SizedBox(height: AppSpacing.xs),
-          const Text(
+          Text(
             'per gram',
-            style: AppTextStyles.subtitle,
+            style: AppTextStyles.subtitleOf(context),
           ),
         ],
       ),

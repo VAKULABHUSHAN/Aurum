@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:aurum/core/services/storage_service.dart';
 import 'package:aurum/core/services/background_service.dart';
 import 'package:aurum/core/services/notification_service.dart';
+import 'package:aurum/core/services/theme_service.dart';
 import 'package:aurum/core/theme/app_theme.dart';
 import 'package:aurum/routes/app_pages.dart';
 import 'package:aurum/routes/app_routes.dart';
@@ -13,6 +14,7 @@ void main() async {
   
   await Hive.initFlutter();
   await StorageService().init();
+  Get.put(ThemeService());
   await NotificationService().init();
   await BackgroundService().init();
   
@@ -28,6 +30,8 @@ class AurumApp extends StatelessWidget {
       title: 'Aurum',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: StorageService().getThemeMode(),
       initialRoute: AppRoutes.home,
       getPages: AppPages.routes,
     );
